@@ -67,8 +67,6 @@ int main(int ac, char **av)
         if (line[read_bytes - 1] == '\n')
             line[read_bytes - 1] = '\0';
         remove_comments(line);
-
-        /* 1. التقسيم حسب الفاصل ; أولاً */
         cmd_count = 0;
         token = strtok(line, ";");
         while (token != NULL && cmd_count < 100)
@@ -77,8 +75,6 @@ int main(int ac, char **av)
             token = strtok(NULL, ";");
         }
         commands[cmd_count] = NULL;
-
-        /* 2. تنفيذ الأوامر واحداً تلو الآخر */
         for (i = 0; i < cmd_count; i++)
         {
             parse_command(commands[i], args);
