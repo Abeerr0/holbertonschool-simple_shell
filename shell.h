@@ -38,3 +38,5 @@ void remove_comments(char *line);
 void handle_file_input(char **av);
 int handle_help(char **args);
 #endif
+int builtin_alias(char **args);
+void expand_aliases(char **args);
