@@ -43,10 +43,10 @@ void free_env(void)
 
 int main(int ac, char **av)
 {
-    char *line = NULL, *args[100], *orig_args[100];
+    char *line = NULL, *args[100], *orig_args[100], *commands[100], *token;
     ssize_t read_bytes;
     size_t len = 0;
-    int last_status = 0, k;
+    int last_status = 0, k, i, cmd_count;
 
     (void)ac;
     signal(SIGINT, sigint_handler);
@@ -67,15 +67,35 @@ int main(int ac, char **av)
         if (line[read_bytes - 1] == '\n')
             line[read_bytes - 1] = '\0';
         remove_comments(line);
-        parse_command(line, args);
-        for (k = 0; args[k]; k++)
-            orig_args[k] = args[k];
-        orig_args[k] = NULL;
-        expand_variables(args, last_status);
-        execute_command(args, av, line, &last_status);
-        for (k = 0; args[k]; k++)
-            if (args[k] != orig_args[k])
-                free(args[k]);
+
+        /* 1. التقسيم حسب الفاصل ; أولاً */
+        cmd_count = 0;
+        token = strtok(line, ";");
+        while (token != NULL && cmd_count < 100)
+        {
+            commands[cmd_count++] = token;
+            token = strtok(NULL, ";");
+        }
+        commands[cmd_count] = NULL;
+
+        /* 2. تنفيذ الأوامر واحداً تلو الآخر */
+        for (i = 0; i < cmd_count; i++)
+        {
+            parse_command(commands[i], args);
+            if (args[0] == NULL)
+                continue;
+
+            for (k = 0; args[k]; k++)
+                orig_args[k] = args[k];
+            orig_args[k] = NULL;
+
+            expand_variables(args, last_status);
+            execute_command(args, av, line, &last_status);
+
+            for (k = 0; args[k]; k++)
+                if (args[k] != orig_args[k])
+                    free(args[k]);
+        }
     }
     free(line);
     free_env();
