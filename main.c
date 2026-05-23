@@ -32,6 +32,7 @@ void init_env(void)
 void free_env(void)
 {
     int i = 0;
+
     if (environ)
     {
         for (i = 0; environ[i]; i++)
@@ -41,12 +42,76 @@ void free_env(void)
     }
 }
 
+int parse_operators(char *line, char **cmds, int *ops)
+{
+    int i, c_idx = 1;
+
+    cmds[0] = line;
+    ops[0] = 0;
+    for (i = 0; line[i]; i++)
+    {
+        if (line[i] == ';')
+        {
+            line[i] = '\0';
+            cmds[c_idx] = &line[i + 1];
+            ops[c_idx++] = 0;
+        }
+        else if (line[i] == '&' && line[i + 1] == '&')
+        {
+            line[i] = '\0';
+            line[i + 1] = '\0';
+            cmds[c_idx] = &line[i + 2];
+            ops[c_idx++] = 1;
+            i++;
+        }
+        else if (line[i] == '|' && line[i + 1] == '|')
+        {
+            line[i] = '\0';
+            line[i + 1] = '\0';
+            cmds[c_idx] = &line[i + 2];
+            ops[c_idx++] = 2;
+            i++;
+        }
+    }
+    cmds[c_idx] = NULL;
+    return (c_idx);
+}
+
+void process_commands(char **c, int *ops, int c_id, char **av, char *l, int *ls)
+{
+    char *args[100], *orig_args[100];
+    int i, k;
+
+    for (i = 0; i < c_id; i++)
+    {
+        if (ops[i] == 1 && *ls != 0)
+            continue;
+        if (ops[i] == 2 && *ls == 0)
+            continue;
+
+        parse_command(c[i], args);
+        if (args[0] == NULL)
+            continue;
+
+        for (k = 0; args[k]; k++)
+            orig_args[k] = args[k];
+        orig_args[k] = NULL;
+
+        expand_variables(args, *ls);
+        execute_command(args, av, l, ls);
+
+        for (k = 0; args[k]; k++)
+            if (args[k] != orig_args[k])
+                free(args[k]);
+    }
+}
+
 int main(int ac, char **av)
 {
-    char *line = NULL, *args[100], *orig_args[100], *commands[100], *token;
+    char *line = NULL, *cmds[100];
+    int ops[100], last_status = 0, c_idx;
     ssize_t read_bytes;
     size_t len = 0;
-    int last_status = 0, k, i, cmd_count;
 
     (void)ac;
     signal(SIGINT, sigint_handler);
@@ -67,31 +132,9 @@ int main(int ac, char **av)
         if (line[read_bytes - 1] == '\n')
             line[read_bytes - 1] = '\0';
         remove_comments(line);
-        cmd_count = 0;
-        token = strtok(line, ";");
-        while (token != NULL && cmd_count < 100)
-        {
-            commands[cmd_count++] = token;
-            token = strtok(NULL, ";");
-        }
-        commands[cmd_count] = NULL;
-        for (i = 0; i < cmd_count; i++)
-        {
-            parse_command(commands[i], args);
-            if (args[0] == NULL)
-                continue;
 
-            for (k = 0; args[k]; k++)
-                orig_args[k] = args[k];
-            orig_args[k] = NULL;
-
-            expand_variables(args, last_status);
-            execute_command(args, av, line, &last_status);
-
-            for (k = 0; args[k]; k++)
-                if (args[k] != orig_args[k])
-                    free(args[k]);
-        }
+        c_idx = parse_operators(line, cmds, ops);
+        process_commands(cmds, ops, c_idx, av, line, &last_status);
     }
     free(line);
     free_env();
