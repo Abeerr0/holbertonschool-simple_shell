@@ -1,5 +1,16 @@
 #include "shell.h"
 
+static int my_strcmp_main(char *s1, char *s2)
+{
+    if (!s1 || !s2) return (1);
+    while (*s1 && *s1 == *s2)
+    {
+        s1++;
+        s2++;
+    }
+    return (*s1 - *s2);
+}
+
 void sigint_handler(int sig)
 {
     (void)sig;
@@ -97,14 +108,13 @@ void process_commands(char **c, int *ops, int c_id, char **av, char *l, int *ls)
             orig_args[k] = args[k];
         orig_args[k] = NULL;
 
-        expand_aliases(args);
-
-        if (_strcmp(args[0], "alias") == 0)
+        if (my_strcmp_main(args[0], "alias") == 0)
         {
             *ls = builtin_alias(args);
             continue;
         }
 
+        expand_aliases(args);
         expand_variables(args, *ls);
         execute_command(args, av, l, ls);
 
