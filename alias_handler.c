@@ -10,47 +10,16 @@ typedef struct alias_node {
 static alias_t aliases[100];
 static int alias_count = 0;
 
-static int my_strcmp(char *s1, char *s2)
-{
-    while (*s1 && *s1 == *s2)
-    {
-        s1++;
-        s2++;
-    }
-    return (*s1 - *s2);
-}
-
-static int my_strlen(char *s)
-{
-    int i = 0;
-    while (s && s[i])
-        i++;
-    return (i);
-}
-
-static char *my_strdup(char *s)
-{
-    char *d;
-    int i, len = my_strlen(s);
-
-    d = malloc(len + 1);
-    if (!d)
-        return (NULL);
-    for (i = 0; i <= len; i++)
-        d[i] = s[i];
-    return (d);
-}
-
 int print_alias(char *name)
 {
     int i;
     for (i = 0; i < alias_count; i++)
     {
-        if (my_strcmp(aliases[i].name, name) == 0)
+        if (_strcmp(aliases[i].name, name) == 0)
         {
-            write(STDOUT_FILENO, aliases[i].name, my_strlen(aliases[i].name));
+            write(STDOUT_FILENO, aliases[i].name, _strlen(aliases[i].name));
             write(STDOUT_FILENO, "='", 2);
-            write(STDOUT_FILENO, aliases[i].val, my_strlen(aliases[i].val));
+            write(STDOUT_FILENO, aliases[i].val, _strlen(aliases[i].val));
             write(STDOUT_FILENO, "'\n", 2);
             return (0);
         }
@@ -63,17 +32,17 @@ void set_alias(char *name, char *val)
     int i;
     for (i = 0; i < alias_count; i++)
     {
-        if (my_strcmp(aliases[i].name, name) == 0)
+        if (_strcmp(aliases[i].name, name) == 0)
         {
             free(aliases[i].val);
-            aliases[i].val = my_strdup(val);
+            aliases[i].val = _strdup(val);
             return;
         }
     }
     if (alias_count < 100)
     {
-        aliases[alias_count].name = my_strdup(name);
-        aliases[alias_count].val = my_strdup(val);
+        aliases[alias_count].name = _strdup(name);
+        aliases[alias_count].val = _strdup(val);
         alias_count++;
     }
 }
@@ -114,15 +83,22 @@ int builtin_alias(char **args)
 
 void expand_aliases(char **args)
 {
-    int i;
+    int i, j, changed;
     if (!args || !args[0])
         return;
-    for (i = 0; i < alias_count; i++)
+    
+    for (j = 0; j < 10; j++)
     {
-        if (my_strcmp(aliases[i].name, args[0]) == 0)
+        changed = 0;
+        for (i = 0; i < alias_count; i++)
         {
-            args[0] = aliases[i].val;
-            break;
+            if (_strcmp(aliases[i].name, args[0]) == 0)
+            {
+                args[0] = aliases[i].val;
+                changed = 1;
+                break;
+            }
         }
+        if (!changed) break;
     }
 }

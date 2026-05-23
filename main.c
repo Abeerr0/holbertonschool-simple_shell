@@ -99,8 +99,7 @@ void process_commands(char **c, int *ops, int c_id, char **av, char *l, int *ls)
 
         expand_aliases(args);
 
-        if (args[0][0] == 'a' && args[0][1] == 'l' && args[0][2] == 'i' &&
-            args[0][3] == 'a' && args[0][4] == 's' && args[0][5] == '\0')
+        if (_strcmp(args[0], "alias") == 0)
         {
             *ls = builtin_alias(args);
             continue;
